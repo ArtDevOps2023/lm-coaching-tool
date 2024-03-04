@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{base::layout(_,~{::main},_,~{::script})}">
+
+	<main>
+		<!-- Page Heading -->
+		<div class="d-sm-flex align-items-center justify-content-between mb-4">
+			<h4 class="h4 mb-0 text-gray-800">Section Name: <span id="sectionName"></span></h4>
+		</div>
+
+		<div class="card shadow mb-4">
+	    <div class="card-body">
+				<div class="p-3 my-3 border">
+					<div class="row">
+						<form id="subsectionForm" method="post" th:object="${subsectionForm}">
+							<input type="hidden" name="sectionId" th:value="${subsectionForm.sectionId}" />
+							<input type="hidden" name="subsectionId" th:value="${subsectionForm.subsectionId}" />
+							<div class="row mb-3">
+								<div class="col-6">
+		                            <h5 class="h5 text-gray">Subsection</h5>
+								</div>
+		                    </div>
+	                        <div class="row mb-3">
+								<div class="form-group col ml-3">
+							        <label for="description" class="form-label">Description</label>
+								    <textarea class="form-control" id="description" name="description" th:value="${subsectionForm.description}" placeholder="Description" rows="3"></textarea>
+									<div class="mt-2 text-danger d-none" id="descriptionError">Description is Required</div>
+								</div>
+	                        </div>
+	                        <div class="row mb-3">
+								<div class="form-group col ml-3">
+							        <label for="facilitator" class="form-label">Facilitator</label>
+								    <input type="text" class="form-control" id="facilitator" name="facilitator" th:value="${subsectionForm.facilitator}" placeholder="Facilitator"/>
+								    <div class="mt-2 text-danger" th:if="${#fields.hasErrors('facilitator')}" th:errors="*{facilitator}">Facilitator Error</div>
+								</div>
+
+								<div class="form-group col ml-3">
+									<label for="details" class="form-label">Details</label>
+							        <input type="text" class="form-control" id="details" name="details" th:value="${subsectionForm.details}" placeholder="Details"/>
+									<div class="mt-2 text-danger" th:if="${#fields.hasErrors('details')}" th:errors="*{details}">Details Error</div>
+								</div>
+	                        </div>
+							<div class="row mb-3">
+								<div class="form-group col ml-3">
+								    <label for="targetDay" class="form-label">Target Day</label>
+							        <input type="text" class="form-control" id="targetDay" name="targetDay" th:value="${subsectionForm.targetDay}" placeholder="Target Day">
+									<div class="mt-2 text-danger" th:if="${#fields.hasErrors('targetDay')}" th:errors="*{targetDay}">Target Day Error</div>
+								</div>
+
+								<div class="form-group col ml-3">
+								    <label for="targetSprint" class="form-label">Target Sprint</label>
+							        <input type="text" class="form-control" id="targetSprint" name="targetSprint" th:value="${subsectionForm.targetSprint}" placeholder="Target Sprint">
+									<div class="mt-2 text-danger" th:if="${#fields.hasErrors('targetSprint')}" th:errors="*{targetSprint}">Target Sprint Error</div>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="row">
+						<div class="mb-3 ml-3" th:unless="${subsectionForm.subsectionId != null}">
+							<div sec:authorize="hasRole('ROLE_ADMIN')">
+	                            <button id="btnActionSubmit" class="btn btn-primary px-4 float-right">Add Subsection</button>
+	                        </div>
+	                    </div>
+	                    <div class="mb-3 ml-3" th:if="${subsectionForm.subsectionId != null}">
+							<div sec:authorize="hasRole('ROLE_ADMIN')">
+	                            <button id="btnActionUpdate" class="btn btn-primary px-4 float-right">Update Subsection</button>
+	                        </div>
+	                    </div>
+					</div>
+				</div>
+				<hr/>
+				<div>
+					<table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+	                    <thead style="background-color: #d3d3d3">
+						    <tr>
+						      <th scope="col">ID#</th>
+						      <th scope="col">Subsection</th>
+						      <th scope="col">Facilitator/POC</th>
+						      <th scope="col">Details & References</th>
+						      <th scope="col">Target Day(s)</th>
+						      <th scope="col">Target Sprint(s)</th>
+						      <th scope="col">Action</th>
+						    </tr>
+	                    </thead>
+	                    <tbody>
+							<tr>
+								<td colspan="7" class="text-center">
+									No records found.
+								</td>
+							</tr>
+	                    </tbody>
+					</table>
+				</div>
+				<hr/>
+	            <a href="/onboarding/section" class="btn btn-primary px-4 float-right">   Back   </a>
+	    </div>
+	</div>
+
+	</main>
+
+	<script src="/js/sectionService.js"></script>
+	<script src="/js/subsectionService.js"></script>
+
+	<script>
+			const SECTION_ID = "[[${subsectionForm.sectionId}]]";
+			const SUBSECTION_ID = "[[${subsectionForm.subsectionId}]]";
+
+			const app = () => {
+
+				const ROLE_ADMIN = "admin";
+				const ROLE_USER = "user";
+				const roles = [[${#authentication.principal.authorities}]];
+				const isAdmin = () => roles.find( r => r == ROLE_ADMIN)
+
+				const loadInit = () => {
+					const fetchSectionBySectionId = sectionService().fetchSectionBySectionId(SECTION_ID);
+					fetchSectionBySectionId.done(function(result) {
+						if (result.data) {
+							populate(result.data.sectionBySectionId);
+
+							if (SUBSECTION_ID !== undefined || SUBSECTION_ID !== null) {
+								//this is edit perspective
+								populateSubsectionForm(result.data.sectionBySectionId, SUBSECTION_ID);
+							}
+						}
+					});
+
+					$('#btnActionSubmit').click( async () => {
+						const subsectionForm = document.querySelector('#subsectionForm');
+						const isPassValidation = validateSubsectionForm(subsectionForm);
+						if (isPassValidation) {
+							const result = await subsectionService().upsert(subsectionForm, 0);
+							document.location.reload();
+						}
+					});
+
+					$('#btnActionUpdate').click( async () => {
+						const subsectionForm = document.querySelector('#subsectionForm');
+						const isPassValidation = validateSubsectionForm(subsectionForm);
+						if (isPassValidation) {
+							const result = await subsectionService().upsert(subsectionForm, SUBSECTION_ID);
+							document.location.href="/onboarding/section/" + SECTION_ID + "/subsection";
+						}
+					});
+				}
+
+
+				const validateSubsectionForm = (subsectionForm) => {
+					const formData = new FormData(subsectionForm);
+					let validatePass = true;
+					if (formData.get("description") === '' || formData.get("description") === null) {
+						$('#descriptionError').removeClass("d-none");
+						validatePass = false;
+					} else {
+						$('#descriptionError').addClass("d-none");
+					}
+
+					return validatePass;
+				}
+
+				const populate = (section) => {
+					const table = $("#dataTable");
+					$('#sectionName').text(section.name);
+
+					if (section.subsectionList && section.subsectionList.length > 0) {
+						table.find("tbody").empty();
+						section.subsectionList.forEach( subsection => {
+							table.find("tbody").append(
+								`
+								<tr>
+							        <td>${subsection.subsectionId}</td>
+							        <td>${subsection.description}</td>
+							        <td>${subsection.facilitator}</td>
+							        <td>${subsection.details}</td>
+							        <td>${subsection.targetDay}</td>
+							        <td>${subsection.targetSprint}</td>
+							        <td>
+										<a sec:authorize="hasRole('ROLE_ADMIN')" href="/onboarding/section/${section.sectionId}/subsection/${subsection.subsectionId}" class="btn btn-primary px-4">Edit</a>
+										<button onclick="deleteSubsection('${subsection.subsectionId}')" sec:authorize="hasRole('ROLE_ADMIN')" class="btn btn-primary px-4">Delete</button>
+									</td>
+							    </tr>
+								`
+							);
+						});
+					}
+
+				}
+
+				const populateSubsectionForm = (section, subsectionId) => {
+					const form = $('#subsectionForm');
+					const formElement = form.get(0);
+
+
+					section.subsectionList.forEach( subsection => {
+						if(subsection.subsectionId === subsectionId) {
+							formElement.description.value = subsection.description;
+							formElement.facilitator.value = subsection.facilitator;
+							formElement.details.value = subsection.details;
+							formElement.targetDay.value = subsection.targetDay;
+							formElement.targetSprint.value = subsection.targetSprint;
+						 }
+					});
+				}
+
+				return {
+					init : loadInit
+				}
+			}
+
+			const deleteSubsection = (subsectionId) => {
+				if (confirm("Confirm to delete?")) {
+					const result = subsectionService().delete(subsectionId);
+					document.location.reload();
+				}
+			}
+
+			window.addEventListener("load", app().init);
+
+		</script>
+
+</html>

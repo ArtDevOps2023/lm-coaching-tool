@@ -1,0 +1,19 @@
+version: "3"
+services:
+  db-mysql:
+    image: mysql:8.0
+    container_name: db-mysql-app
+    restart: always
+    environment:
+       MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+      
+  lmph-be-exam-app:
+    image: jhuntiballa/lmph-be-exam-app:latest
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql-app:3306/?autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+    depends_on:
+      - db-mysql

@@ -1,0 +1,130 @@
+<!--Don't forget to give your page a new name as needed.-->
+<!DOCTYPE html>
+
+<html lang="en"  xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{base::layout(_,~{::main},_,~{::script})}">
+
+
+<!--This where the page content must go-->
+<main class="w-50">
+
+	<form th:action="@{/employee/flow/configure/save}" method="post">
+		<div class="card shadow">
+			<div class="card-header">
+				<span class="h3 mb-0 text-gray-800">
+				Manage Flow for [[${emp.firstName}]] [[${emp.lastName}]]
+				</span>
+			</div>
+			<div class="card-body" id="cardBody">
+				<div class="col">
+
+					<input type="hidden" th:field="${emp.id}" th:value="${emp.id}"/>
+					<input type="hidden" th:name="employee.id" th:value="${emp.id}"/>
+					<input type="hidden" th:field="${emp.firstName}" th:value="${emp.firstName}"/>
+					<input type="hidden" th:field="${emp.middleName}" th:value="${emp.middleName}"/>
+					<input type="hidden" th:field="${emp.lastName}" th:value="${emp.lastName}"/>
+					<input type="hidden" name="counter_tracker" th:value="${#lists.size(emp.employeeFlowInfos)}"/>
+
+					<select class="form-control col d-none" id="hiddenSelectControl">
+						<option th:each="flio:${flowInfos}"
+						        th:value="${flio.flowId}" th:text="${flio.name}"></option>
+					</select>
+
+					<h5 class="mb-4">Position: [[${emp.companyPosition}]]</h5>
+
+						<th:block th:each="ef,efStat:${emp.employeeFlowInfos}">
+
+							<div class="form-row mb-2 custom-step-element">
+
+								<input type="hidden" th:name="|employeeFlowInfos[${efStat.index}].id|"
+								       th:value="${ef.id}"/>
+								<input type="hidden" th:name="|employeeFlowInfos[${efStat.index}].employee.id|"
+								       th:value="${emp.id}"/>
+								<input type="hidden" th:name="|employeeFlowInfos[${efStat.index}].sortOrder|"
+								       th:value="${efStat.count}"/>
+
+								<label th:for="|employeeFlowInfos[${efStat.index}].flow.flowId|"
+								       class="col-form-label col-2">Flow <span th:text="${efStat.count}"></span> :</label>
+
+								<select class="form-control col" th:name="|employeeFlowInfos[${efStat.index}].flow.flowId|">
+									<option th:each="flio:${flowInfos}"
+									        th:selected="${ef.flow.flowId == flio.flowId}"
+									        th:value="${flio.flowId}" th:text="${flio.name}"></option>
+								</select>
+
+								<div class="col-1">
+									<a class="btn btn-danger btn-sm" href="#" onclick="javascript:removeFlow(this);">Remove</a>
+								</div>
+							</div>
+
+						</th:block>
+
+					<div class="form-row" id="addButton">
+						<div class="offset-10 col">
+							<a class="btn btn-sm btn-info" href="#" onclick="javascript:addFlow();">Add Flow</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="card-footer">
+				<div class="text-right">
+					<a class="btn btn-secondary btn-sm" th:href="@{/employees}">Back</a>
+					<button type="submit" class="btn btn-info btn-sm">Save Configuration</button>
+				</div>
+			</div>
+		</div>
+
+	</form>
+
+</main>
+
+<!--Any JavaScript statement can go here.
+Can have as many <script> tag as needed. -->
+	<script>
+		function addFlow(){
+			let counter_tracker = parseInt($('[name=counter_tracker]').val());
+			let hiddenSelectControl = $('#hiddenSelectControl').clone();
+			let nextIndex = counter_tracker;
+			let nextCount = counter_tracker + 1;
+			let flowId = $('#id[name=id]').val();
+			let baseSection = $('<div class="form-row mb-2 custom-step-element"></div>');
+			let hiddenFields = 
+				'<input type="hidden" name="employeeFlowInfos['+ nextIndex +'].id"/>'+
+				'<input type="hidden" name="employeeFlowInfos['+ nextIndex +'].employee.id" value="'+ flowId +'"/>'+
+				'<input type="hidden" name="employeeFlowInfos['+ nextIndex +'].sortOrder" value="'+ nextCount+'"/>';
+
+			let selectLabel = 
+				'<label for="employeeFlowInfos['+ nextIndex +'].flow.flowId" class="col-form-label col-2">Flow <span>'+ nextCount +'</span> :</label>';
+
+			let removeSection = 
+				'<div class="col-1"><a class="btn btn-danger btn-sm" href="#" onclick="javascript:removeFlow(this);">Remove</a></div>';
+
+			hiddenSelectControl.attr('name', 'employeeFlowInfos['+ nextIndex +'].flow.flowId');
+			hiddenSelectControl.removeClass('d-none');
+			hiddenSelectControl.attr('id', '');
+
+			$(baseSection).append(hiddenFields).append(selectLabel).append(hiddenSelectControl).append(removeSection);
+
+			if($('.custom-step-element:last').length > 0) 
+				$('.custom-step-element:last').after(baseSection);
+			else
+				$('#addButton').before(baseSection);
+				
+			//update tracker value
+			$('[name=counter_tracker]').val(counter_tracker + 1);
+			
+		}
+
+		function removeFlow(e){
+			let thisControl = $(e);
+			let customStepElementParent = $(thisControl).parent().parent();
+			customStepElementParent.remove();
+
+			//update tracker value
+			let counter_tracker = parseInt($('[name=counter_tracker]').val());
+			$('[name=counter_tracker]').val(counter_tracker - 1);
+
+		}
+	</script>
+
+</html>

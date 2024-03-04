@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{base::layout(_,~{::main},_,~{::script})}">
+
+<main class="w-50">
+	<form th:action="@{/onboarding/flow/save}" th:object="${flowInfo}" method="post">
+		<div class="card shadow">
+			<div class="card-header">
+				<span class="h3 mb-0 text-gray-800">
+					<span th:text="${flowInfo.flowId == null? 'Add New Flow':'Edit Flow - ' + flowInfo.name}"></span></span>
+			</div>
+			<div class="card-body" id="cardBody">
+				<div class="col">
+					<input type="hidden" th:field="*{flowId}" th:value="*{flowId}"/>
+					<input type="hidden" name="counter_tracker" th:value="${#lists.size(flowInfo.flowSectionInfos)}"/>
+
+					<select class="form-control col d-none" id="hiddenSelectControl">
+						<option th:each="secItem:${sectionsList}"
+						        th:value="${secItem.sectionId}" th:text="${secItem.name}"></option>
+					</select>
+
+					<div class="form-group">
+						<label>Flow name:</label>
+						<input class="form-control" type="text" th:field="*{name}" th:value="*{name}"/>
+					</div>
+
+					<th:block th:each="flowSec,flowSecStat:*{flowSectionInfos}">
+
+						<div class="form-row mb-2 custom-step-element">
+
+							<input type="hidden" th:name="|flowSectionInfos[${flowSecStat.index}].id|"
+							       th:value="${flowSec.sectionInfo.sectionId}"/>
+							<input type="hidden" th:name="|flowSectionInfos[${flowSecStat.index}].flowInfo.flowId|"
+							       th:value="${flowInfo.flowId}"/>
+							<input type="hidden" th:name="|flowSectionInfos[${flowSecStat.index}].sortOrder|"
+							       th:value="${flowSecStat.count}"/>
+
+							<label th:for="|flowSectionInfos[${flowSecStat.index}].sectionInfo.sectionId|"
+							       class="col-form-label col-2">Step <span th:text="${flowSecStat.count}"></span> :</label>
+
+							<select class="form-control col" th:name="|flowSectionInfos[${flowSecStat.index}].sectionInfo.sectionId|">
+								<option th:each="secItem:${sectionsList}"
+								        th:selected="${flowSec.sectionInfo.sectionId == secItem.sectionId}"
+								        th:value="${secItem.sectionId}" th:text="${secItem.name}"></option>
+							</select>
+
+							<div class="col-1">
+								<a class="btn btn-danger btn-sm" href="#" onclick="javascript:removeStep(this);">Remove</a>
+							</div>
+						</div>
+
+					</th:block>
+
+					<div class="form-row">
+						<div class="offset-10 col">
+							<a class="btn btn-sm btn-info" href="#" onclick="javascript:addStep();">Add Step</a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="card-footer">
+				<div class="text-right">
+					<a class="btn btn-secondary btn-sm" th:href="@{/onboarding}">Back</a>
+					<button type="submit" class="btn btn-info btn-sm">Save Flow</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</main>
+
+<script>
+	function addStep(){
+		let counter_tracker = parseInt($('[name=counter_tracker]').val());
+		let hiddenSelectControl = $('#hiddenSelectControl').clone();
+		let nextIndex = counter_tracker;
+		let nextCount = counter_tracker + 1;
+		let flowId = $('#flowId[name=flowId]').val();
+		let baseSection = $('<div class="form-row mb-2 custom-step-element"></div>');
+		let hiddenFields = 
+			'<input type="hidden" name="flowSectionInfos['+ nextIndex +'].id"/>'+
+			'<input type="hidden" name="flowSectionInfos['+ nextIndex +'].flowInfo.flowId" value="'+ flowId +'"/>'+
+			'<input type="hidden" name="flowSectionInfos['+ nextIndex +'].sortOrder" value="'+ nextCount+'"/>';
+
+		let selectLabel = 
+			'<label for="flowSectionInfos['+ nextIndex +'].sectionInfo.sectionId" class="col-form-label col-2">Step <span>'+ nextCount +'</span> :</label>';
+
+		let removeSection = 
+			'<div class="col-1"><a class="btn btn-danger btn-sm" href="#" onclick="javascript:removeStep(this);">Remove</a></div>';
+
+		hiddenSelectControl.attr('name', 'flowSectionInfos['+ nextIndex +'].sectionInfo.sectionId');
+		hiddenSelectControl.removeClass('d-none');
+		hiddenSelectControl.attr('id', '');
+
+		$(baseSection).append(hiddenFields).append(selectLabel).append(hiddenSelectControl).append(removeSection);
+
+		if($('.custom-step-element:last').length > 0) 
+			$('.custom-step-element:last').after(baseSection);
+		else
+			$('#cardBody > div.col > div.form-group').after(baseSection);
+			
+		//update tracker value
+		$('[name=counter_tracker]').val(counter_tracker + 1);
+		
+	}
+
+	function removeStep(e){
+		let thisControl = $(e);
+		let customStepElementParent = $(thisControl).parent().parent();
+		customStepElementParent.remove();
+
+		//update tracker value
+		let counter_tracker = parseInt($('[name=counter_tracker]').val());
+		$('[name=counter_tracker]').val(counter_tracker - 1);
+	}
+</script>
+
+</html>

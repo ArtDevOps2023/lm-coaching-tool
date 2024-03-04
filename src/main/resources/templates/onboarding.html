@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{base::layout(_,~{::main},_,~{::script})}">
+
+	<main>
+		<!-- Page Heading -->
+		<div class="d-sm-flex align-items-center justify-content-between mb-4">
+			<h1 class="h3 mb-0 text-gray-800">Onboarding</h1>
+		</div>
+
+		<th:block sec:authorize="hasRole('ROLE_ADMIN')">
+
+			<div class="alert alert-success" role="alert" th:text="${customMessage}" th:if="${not #strings.isEmpty(customMessage)}">
+			</div>
+			<div class="card shadow mb-4">
+				<div class="card-header">
+					<span class="h3 mb-0 text-gray-800">Flow</span>
+					<a class="btn btn-info btn-sm float-right" th:href="@{/onboarding/flow/create}">Add Flow</a>
+				</div>
+				<div class="card-body">
+					<table class="table table-bordered">
+						<thead style="background-color: #d3d3d3">
+						<tr>
+							<th scope="col">Flow Name</th>
+							<th scope="col">Created By</th>
+							<th scope="col">Created Date</th>
+							<th scope="col">&nbsp;</th>
+						</tr>
+						</thead>
+						<tbody th:fragment="flowTableBody">
+						<tr th:each="flow : ${flows}">
+							<td th:text="${flow.name}"></td>
+							<td th:text="${flow.createdBy}"></td>
+							<td th:text="${flow.createdDate}"></td>
+							<td>
+								<a class="btn btn-primary btn-sm" th:href="@{/onboarding/flow/update/{id}(id=${flow.flowId})}">Edit</a>
+								<a class="btn btn-danger btn-sm"
+								   th:href="@{/onboarding/flow/delete/{id}?name={name}(id=${flow.flowId},name=${flow.name})}">Remove</a>
+							</td>
+						</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</th:block>
+
+		<th:block sec:authorize="hasRole('ROLE_ADMIN')">
+			<div class="card shadow mb-4">
+				<div class="card-header">
+					<span class="h3 mb-0 text-gray-800">Sections</span>
+					<a sec:authorize="hasRole('ROLE_ADMIN')" href="/onboarding/section"
+					   class="btn btn-sm btn-info float-right">Manage Sections</a>
+				</div>
+				<div class="card-body">
+					<table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+						<thead style="background-color: #d3d3d3">
+						<tr>
+							<th scope="col">ID#</th>
+							<th scope="col">Section Name</th>
+							<th scope="col">Color</th>
+							<th scope="col">Created By</th>
+						</tr>
+						</thead>
+						<tbody>
+						<tr>
+							<td colspan="4" class="text-center">
+								No records found.
+							</td>
+						</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</th:block>
+
+
+	</main>
+
+	<script th:src="@{~/js/sectionService.js}"></script>
+
+	<script>
+
+		const app = () => {
+
+			const ROLE_ADMIN = "admin";
+			const ROLE_USER = "user";
+			const roles = [[${#authentication.principal.authorities}]];
+			const hasRole = (role) => roles.find( r => r == role)
+
+			const loadInit = () => {
+				const fetchAllSections = sectionService().fetchAllSections();
+
+				fetchAllSections.done(function(result) {
+					if (result.data) {
+						populate(result.data.section);
+					}
+				});
+			}
+
+			const populate = (sectionList) => {
+				const table = $("#dataTable");
+
+				if (sectionList && sectionList.length > 0) {
+					table.find("tbody").empty();
+
+					sectionList.forEach( section => {
+						table.find("tbody").append(
+							`
+							<tr>
+								  <td>${section.sectionId}</td>
+								  <td>${section.name}</td>
+								  <td>${section.colorDescription}</td>
+								  <td>Admin</td>
+							</tr>
+							`
+						);
+					});
+				}
+			}
+
+			return {
+				init : loadInit
+			}
+		}
+
+		window.addEventListener("load", app().init);
+	</script>
+
+</html>

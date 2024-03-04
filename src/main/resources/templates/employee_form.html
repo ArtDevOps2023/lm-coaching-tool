@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{base::layout(_,~{::main},_,~{::script})}">
+
+	<main>
+		<!-- Page Heading -->
+		<div class="d-sm-flex align-items-center justify-content-between mb-4">
+<h1 class="h3 mb-0 text-gray-800">Employee Info</h1>
+
+</div>
+
+		<!-- DataTales Example -->
+		<div class="card shadow mb-4">
+			<div class="card-header py-3">
+				<div sec:authorize="hasRole('ROLE_ADMIN')">
+			        <button id="btnActionSubmit" class="btn btn-primary px-4">Save</button>
+			        &nbsp;
+			        <button th:if="${form.id} != null" id="btnActionDelete" class="btn btn-danger px-4">Delete</button>
+			    </div>
+			</div>
+
+			<div class="card-body">
+
+			    <form id="form" method="post" action="/employees/post" th:object="${form}">
+
+					<input type="hidden" name="id" th:value="${form.id}" />
+
+			        <div class="row">
+
+						<div class="col-6">
+
+							<div class="mb-3">
+							  <label for="firstName" class="form-label">First Name</label>
+							  <input type="text" class="form-control" id="firstName" name="firstName" th:value="${form.firstName}" placeholder="First name">
+
+								<div class="mt-2 text-danger" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}">First name Error</div>
+							</div>
+
+							<div class="mb-3">
+							  <label for="lastName" class="form-label">Last Name</label>
+							  <input type="text" class="form-control" id="lastName" name="lastName" th:value="${form.lastName}" placeholder="Last name">
+
+							  <div class="mt-2 text-danger" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}">First name Error</div>
+
+							</div>
+
+							<div class="mb-3">
+							  <label for="middleName" class="form-label">Middle Name</label>
+							  <input type="text" class="form-control" id="middleName" name="middleName" th:value="${form.middleName}" placeholder="Middle name">
+								<div class="mt-2 text-danger" th:if="${#fields.hasErrors('middleName')}" th:errors="*{middleName}">First name Error</div>
+							</div>
+
+							<div class="mb-3">
+							  <label for="birthdate" class="form-label">Birth Date</label>
+							  <input type="date" class="form-control" id="birthdate" name="birthdate" th:value="${form.birthdate}" placeholder="YYYY/MM/DD">
+							  <div class="mt-2 text-danger" th:if="${#fields.hasErrors('birthdate')}">Invalid birthdate value.</div>
+
+							</div>
+
+							<div class="mb-3">
+							  <label for="gender" class="form-label">Gender</label>
+							  <select class="form-control" id="gender" name="gender">
+								  <option value="">Select</option>
+								  <option th:each="enum : ${form.genders.values()}"
+			                              th:value="${enum}" th:text="${enum.label}"
+			                              th:selected="${form.gender==enum.toString()}"></option>
+							  </select>
+
+							  <div class="mt-2 text-danger" th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}">Error</div>
+
+							</div>
+
+							<div class="mb-3">
+							  <label for="maritalStatus" class="form-label">Marital Status</label>
+							  <select class="form-control" id="maritalStatus" name="maritalStatus">
+								  <option value="">Select</option>
+								  <option th:each="enum : ${form.maritalStatuses.values()}"
+			                              th:value="${enum}" th:text="${enum.label}"
+			                              th:selected="${form.maritalStatus==enum.toString()}"></option>
+							  </select>
+
+							  <div class="mt-2 text-danger" th:if="${#fields.hasErrors('maritalStatus')}" th:errors="*{maritalStatus}">Error</div>
+
+							</div>
+
+							<div class="mb-3">
+							  <label for="companyPosition" class="form-label">Position</label>
+							  <input type="text" class="form-control" id="companyPosition" name="companyPosition" th:value="${form.companyPosition}" placeholder="Manager">
+
+								<div class="mt-2 text-danger" th:if="${#fields.hasErrors('companyPosition')}" th:errors="*{companyPosition}">Error</div>
+
+							</div>
+
+							<div class="mb-3">
+							  <label for="dateHired" class="form-label">Date Hired</label>
+							  <input type="date" class="form-control" id="dateHired" name="dateHired" th:value="${form.dateHired}" placeholder="YYYY/MM/DD">
+
+							  <div class="mt-2 text-danger" th:if="${#fields.hasErrors('dateHired')}">Invalid date value.</div>
+
+							</div>
+
+						</div>
+
+
+						<div class="col-6">
+
+							<div>
+								<span class="mr-4">Contact Info</span> <button sec:authorize="hasRole('ROLE_ADMIN')" id="btnAddContact" type="button" class="close float-none">+</button>
+							</div>
+
+							<div id="contactList">
+								<div class="row contact-info-block mt-2">
+									<input type="hidden" class="fieldContactId" name="contacts[0].id" >
+									<div class="col">
+										<input type="text" class="form-control fieldContactNo" name="contacts[0].contactNo" placeholder="09170000000">
+									</div>
+									<div class="col-auto pt-2">
+
+										 <div class="form-check inline-block mr-3">
+										    <input class="form-check-input checkIsPrimaryContact fieldIsPrimary" type="checkbox" name="contacts[0].isPrimary" value="1" checked >
+										  </div>
+										 <button type="button" class="close btnDeleteContact" style="margin-top:-2px">x</button>
+									</div>
+								</div>
+							</div>
+
+							<div class="mt-4">
+								<span class="mr-4">Address Info</span> <button sec:authorize="hasRole('ROLE_ADMIN')" id="btnAddAddress" type="button" class="close float-none">+</button>
+							</div>
+
+							<div id="addressList">
+								<div class="row address-info-block mt-2">
+									<input type="hidden" class="fieldAddressId" name="addresses[0].id" >
+									<div class="col">
+										<input type="text" class="form-control fieldAddress1" name="addresses[0].address1" placeholder="Address Line 1">
+									</div>
+									<div class="col">
+										<input type="text" class="form-control fieldAddress2" name="addresses[0].address2" placeholder="Address Line 2">
+									</div>
+
+									<div class="col-auto pt-2">
+
+										 <div class="form-check inline-block mr-3">
+										    <input class="form-check-input checkIsPrimaryAddress fieldIsPrimary" type="checkbox" name="addresses[0].isPrimary" value="1" checked >
+										  </div>
+										 <button type="button" class="close btnDeleteAddress" style="margin-top:-2px">x</button>
+									</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+			    </form>
+
+			</div>
+</div>
+
+
+<div id="templateContact" style="display:none">
+<div class="row contact-info-block mt-2">
+    <div class="col">
+        <input type="hidden" class="fieldContactId" />
+        <input type="text" class="form-control fieldContactNo" placeholder="09170000000">
+    </div>
+    <div class="col-auto pt-2">
+
+        <div class="form-check inline-block mr-3">
+            <input class="form-check-input checkIsPrimaryContact fieldIsPrimary" type="checkbox" value="1">
+        </div>
+        <button type="button" class="close btnDeleteContact" style="margin-top:-2px">x</button>
+    </div>
+</div>
+</div>
+
+<div id="templateAddress" style="display:none">
+<div class="row address-info-block mt-2">
+    <div class="col">
+        <input type="hidden" class="fieldAddressId" />
+        <input type="text" class="form-control fieldAddress1" placeholder="Address Line 1">
+    </div>
+    <div class="col">
+        <input type="text" class="form-control fieldAddress2" placeholder="Address Line 2">
+    </div>
+
+    <div class="col-auto pt-2">
+
+        <div class="form-check inline-block mr-3">
+            <input class="form-check-input checkIsPrimaryAddress fieldIsPrimary" type="checkbox"  value="1">
+        </div>
+        <button type="button" class="close btnDeleteAddress" style="margin-top:-2px">x</button>
+    </div>
+</div>
+</div>
+</main>
+
+    <script src="/js/appService.js"></script>
+
+	<script>
+		
+		const EMPLOYEE_ID = "[[${form.id}]]";
+		
+		const app = () => {
+			
+			const ROLE_ADMIN = "admin";
+			const ROLE_USER = "user";
+			const roles = [[${#authentication.principal.authorities}]];	
+			const isAdmin = () => roles.find( r => r == ROLE_ADMIN)
+			
+			const loadInit = () => {
+				
+				$('#btnActionSubmit').click( async () => {
+					const form = document.querySelector('#form');
+					const result = await appService().upsert(form);
+					document.location.href="/employees";
+				});
+				
+				$('#btnActionDelete').click( () => {
+					confirmDeleteEmployee();
+				});
+				
+				$('#btnAddContact').click( addContact );
+				$('#btnAddAddress').click( addAddress );
+				$('.btnDeleteContact')
+				
+				$('#contactList').on('click', '.btnDeleteContact', deleteContact);
+				$('#contactList').on('change', '.checkIsPrimaryContact', setPrimaryContact);
+				$('#addressList').on('click', '.btnDeleteAddress', deleteAddress);
+				$('#addressList').on('change', '.checkIsPrimaryAddress', setPrimaryAddress);
+				
+				EMPLOYEE_ID.length > 0 && fetch(EMPLOYEE_ID);
+			}
+			
+			const addContact = () => {
+				const element = document.querySelector('#templateContact').querySelector('.contact-info-block').cloneNode(true);
+				$('#contactList').append(element);
+				populateContactFieldArrayNames();	
+			}
+			
+			const setPrimaryContact = (e) => {
+				$('.checkIsPrimaryContact').prop('checked', false);
+				e.target.checked = true;
+			}
+			
+			const deleteContact = (e) => {
+				e.target.closest('.contact-info-block').remove();
+				populateContactFieldArrayNames();
+			}
+			
+			const addAddress = () => {
+				const element = document.querySelector('#templateAddress').querySelector('.address-info-block').cloneNode(true);
+				$('#addressList').append(element);
+				populateAddressFieldArrayNames();
+			}
+			
+			const setPrimaryAddress = (e) => {
+				$('.checkIsPrimaryAddress').prop('checked', false);
+				e.target.checked = true;
+			}
+			
+			const deleteAddress = (e) => {
+				e.target.closest('.address-info-block').remove();
+				populateAddressFieldArrayNames();
+			}
+			
+			const confirmDeleteEmployee = async () => {
+				
+				const result = await appService().delete(EMPLOYEE_ID);
+				document.location.href = "/employees";
+			}
+			
+				
+			const fetch = id => {
+				$.post({
+					  	url: '/graphql',
+					  	data: JSON.stringify({ "query": `{
+												  employeeById( id : ${id}) {
+											    id
+											    firstName
+											    lastName
+											    middleName
+											    birthdate
+											    gender
+											    maritalStatus
+											    companyPosition
+											    dateHired
+											    contacts { 
+											    	id
+											      contactNo
+											      isPrimary
+											    }
+											    addresses { 
+											    	id
+											      address1
+											      address2
+											      isPrimary
+											    }
+											  }
+											}` }),
+				
+				  		contentType: 'application/json'
+				
+					}).done(function(res) {
+					  	 res.data && res.data.employeeById && populateForm(res.data.employeeById);
+					});	
+			}
+			
+			const populateForm = employee => {
+				
+				//console.log(employee);
+				
+				const form = $('#form');
+				const formElement = form.get(0);
+						
+				formElement.firstName.value = employee.firstName;
+				formElement.lastName.value = employee.lastName;
+				formElement.middleName.value = employee.middleName;
+				formElement.gender.value = employee.gender;
+				formElement.maritalStatus.value = employee.maritalStatus;
+				formElement.companyPosition.value = employee.companyPosition;
+				formElement.birthdate.value = employee.birthdate;
+				formElement.dateHired.value = employee.dateHired;
+				
+				employee.contacts && employee.contacts.length > 0 && populateContactList(employee.contacts);
+				employee.addresses && employee.addresses.length > 0 && populateAddressList(employee.addresses);
+				
+				!isAdmin() && disableEditableAction();
+			}
+			
+			const populateContactList = (contacts) => {
+				const list = document.querySelector('#contactList');
+				
+				list.innerHTML = "";
+				
+				contacts.forEach( contact => {
+					const block = document.querySelector('#templateContact').querySelector('.contact-info-block').cloneNode(true);
+					block.querySelector(".fieldContactId").value = contact.id;
+					block.querySelector(".fieldContactNo").value = contact.contactNo;
+					block.querySelector(".fieldIsPrimary").checked = contact.isPrimary;
+					list.append(block);
+				});
+				
+				populateContactFieldArrayNames();	
+			}
+			
+			const populateContactFieldArrayNames = () => {
+				const list = document.querySelector('#contactList').querySelectorAll('.contact-info-block');
+				
+				list.forEach( (block, i) => {
+					block.querySelector(".fieldContactId").setAttribute("name", `contacts[${i}].id`);
+					block.querySelector(".fieldContactNo").setAttribute("name", `contacts[${i}].contactNo`);
+					block.querySelector(".fieldIsPrimary").setAttribute("name", `contacts[${i}].isPrimary`);
+				});
+			}
+					
+			const populateAddressList = (addresses) => {
+				
+				const list = document.querySelector('#addressList');
+				
+				list.innerHTML = "";
+				
+				addresses.forEach( address => {
+					const block = document.querySelector('#templateAddress').querySelector('.address-info-block').cloneNode(true);
+					block.querySelector(".fieldAddressId").value = address.id;
+					block.querySelector(".fieldAddress1").value = address.address1;
+					block.querySelector(".fieldAddress2").value = address.address2;
+					block.querySelector(".fieldIsPrimary").checked = address.isPrimary;
+					list.append(block);
+				});
+				
+				populateAddressFieldArrayNames();
+			}
+			
+			const populateAddressFieldArrayNames = () => {
+				const list = document.querySelector('#addressList').querySelectorAll('.address-info-block');
+				list.forEach( (block, i) => {		
+					block.querySelector(".fieldAddressId").setAttribute("name", `addresses[${i}].id`);
+					block.querySelector(".fieldAddress1").setAttribute("name", `addresses[${i}].address1`);
+					block.querySelector(".fieldAddress2").setAttribute("name", `addresses[${i}].address2`);
+					block.querySelector(".fieldIsPrimary").setAttribute("name", `addresses[${i}].isPrimary`);
+				});
+			}
+			
+			const disableEditableAction = () => {
+					
+				document.querySelector('#form')
+					.querySelectorAll('input, checkbox, select')
+					.forEach( el => el.setAttribute('disabled', true) );
+					
+				document.querySelectorAll('.btnDeleteContact, .btnDeleteAddress').forEach( el => el.remove());
+			}
+			
+			return {
+				init : loadInit
+			}
+		}
+		
+		window.addEventListener("load", app().init);
+		
+	</script>
+
+</html>

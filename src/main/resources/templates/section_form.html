@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{base::layout(_,~{::main},_,~{::script})}">
+
+	<main>
+		<!-- Page Heading -->
+		<div class="d-sm-flex align-items-center justify-content-between mb-4">
+		    <h1 class="h3 mb-0 text-gray-800">Section</h1>
+		</div>
+
+		<div class="card shadow mb-4">
+		    <div class="card-body">
+					<div class="p-3 my-3 border">
+						<div class="row">
+							<div class="col-6">
+								<form id="sectionForm" method="post" action="/onboarding/section/post" th:object="${sectionForm}">
+									<input type="hidden" name="sectionId" id="sectionId" th:value="${sectionForm.sectionId}" />
+									<div class="row mb-3">
+										<div class="col-3">
+									        <label for="name" class="form-label">Section Name</label>
+										</div>
+										<div class="col-9">
+										    <input type="text" class="form-control" id="name" name="name" th:value="${sectionForm.name}" placeholder="Section Name" required/>
+										    <div class="mt-2 text-danger d-none" id="nameError">Section Name is Required</div>
+										</div>
+									</div>
+									<div class="row mb-3">
+										<div class="col-3">
+									        <label for="color" class="form-label">Section Color</label>
+										</div>
+										<div class="col-9">
+										    <select class="form-control" id="color" name="color" required>
+												<option value="">Select</option>
+											    <option th:each="enum : ${sectionForm.sectionColors.values()}"
+													  th:value="${enum}" th:text="${enum.label}"
+													  th:selected="${sectionForm.color==enum.toString()}">
+												</option>
+										    </select>
+										    <div class="mt-2 text-danger d-none" id="colorError">Section Color is Required.</div>
+										</div>
+									</div>
+								</form>
+								<div class="mb-3" th:unless="${sectionForm.sectionId != null}">
+									<div sec:authorize="hasRole('ROLE_ADMIN')">
+			                            <button id="btnActionAdd" class="btn btn-primary px-4 float-right">Add Section</button>
+		                            </div>
+		                        </div>
+		                        <div class="mb-3" th:if="${sectionForm.sectionId != null}">
+									<div sec:authorize="hasRole('ROLE_ADMIN')">
+			                            <button id="btnActionUpdate" class="btn btn-primary px-4 float-right">Update Section</button>
+		                            </div>
+		                        </div>
+							</div>
+						</div>
+					</div>
+					<hr/>
+					<div>
+						<table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+		                    <thead style="background-color: #d3d3d3">
+							    <tr>
+							      <th scope="col">ID#</th>
+							      <th scope="col">Section Name</th>
+							      <th scope="col">Color</th>
+							      <th scope="col">Created By</th>
+							      <th scope="col">Action</th>
+							    </tr>
+		                    </thead>
+		                    <tbody>
+								<tr>
+									<td colspan="5" class="text-center">
+										No records found.
+									</td>
+								</tr>
+		                    </tbody>
+						</table>
+					</div>
+					<hr/>
+
+
+		    </div>
+		</div>
+
+	</main>
+
+    <script src="/js/sectionService.js"></script>
+
+	<script>
+		const SECTION_ID = "[[${sectionForm.sectionId}]]";
+		const app = () => {
+			
+			const ROLE_ADMIN = "admin";
+			const ROLE_USER = "user";
+			const roles = [[${#authentication.principal.authorities}]];	
+			const isAdmin = () => roles.find( r => r == ROLE_ADMIN)
+			
+			const loadInit = () => {
+				const fetchAllSections = sectionService().fetchAllSections();
+				
+				fetchAllSections.done(function(result) {
+					if (result.data) {
+						populate(result.data.section);
+						
+						if (SECTION_ID !== undefined || SECTION_ID !== null) {
+							//this is edit perspective
+							populateSectionForm(result.data.section, SECTION_ID);
+						}
+					}
+				});	
+				
+				$('#btnActionAdd').click( async () => {
+					const sectionForm = document.querySelector('#sectionForm');
+					const isPassValidation = validateSectionForm(sectionForm);
+					if (isPassValidation) {
+						const result = await sectionService().upsert(sectionForm,0);
+						if (result && result.data.upsertSection) {
+							document.location.href="/onboarding/section";
+						} else {
+							console.log("Error in Adding");
+						}
+					}
+				});
+				
+				$('#btnActionUpdate').click( async () => {
+					const sectionForm = document.querySelector('#sectionForm');
+					const isPassValidation = validateSectionForm(sectionForm);
+					if (isPassValidation) {
+						const result = await sectionService().upsert(sectionForm,SECTION_ID);
+						document.location.href="/onboarding/section";
+					}
+				});
+				
+				
+			}
+			
+			const validateSectionForm = (sectionForm) => {
+				const formData = new FormData(sectionForm);
+				let validatePass = true;
+				if (formData.get("name") === '' || formData.get("name") === null) {
+					$('#nameError').removeClass("d-none");
+					validatePass = false;
+				} else {
+					$('#nameError').addClass("d-none");
+				}
+				
+				if (formData.get("color") === '' || formData.get("color") === null) {
+					$('#colorError').removeClass("d-none");
+					validatePass = false;
+				} else {
+					$('#colorError').addClass("d-none");
+				}
+				
+				return validatePass;
+			}
+			
+			const populate = (sectionList) => {
+				const table = $("#dataTable");
+				
+				if (sectionList && sectionList.length > 0) {
+					table.find("tbody").empty();
+					
+					sectionList.forEach( section => {
+						table.find("tbody").append(
+							`
+							<tr>
+						      	<td>${section.sectionId}</td>
+						      	<td>${section.name}</td>
+						      	<td>${section.colorDescription}</td>
+						      	<td>Admin</td>
+						      	<td>
+								  <a sec:authorize="hasRole('ROLE_ADMIN')" href="/onboarding/section/${section.sectionId}/subsection" class="btn btn-primary px-4">Add Subsection</a>
+								  <a sec:authorize="hasRole('ROLE_ADMIN')" href="/onboarding/section/${section.sectionId}" class="btn btn-primary px-4">Edit</a>
+								  <button onclick="deleteSection('${section.sectionId}')" sec:authorize="hasRole('ROLE_ADMIN')" class="btn btn-primary px-4">Delete</button>
+								</td>
+						    </tr>
+							`
+						);
+					});
+				}
+			}
+			
+			const populateSectionForm = (sectionList, sectionId) => {
+				const form = $('#sectionForm');
+				const formElement = form.get(0);
+				
+				sectionList.forEach( section => {
+					 if(section.sectionId === sectionId) {
+						formElement.name.value = section.name;
+						formElement.color.value = section.color;  
+					 }
+				});
+			}
+			
+			
+			return {
+				init : loadInit
+			}
+		}
+		
+		const deleteSection = (sectionId) => {
+			if (confirm("Confirm to delete?")) {
+			    const result = sectionService().delete(sectionId);
+				document.location.reload();
+			}
+		}
+		
+		window.addEventListener("load", app().init);
+		
+	</script>
+
+</html>

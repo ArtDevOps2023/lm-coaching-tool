@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{base::layout(_,~{::main},_,~{::script})}">
+
+<main>
+
+	<th:block th:each="empFlow : ${empFlows}">
+
+		<th:block th:if="${#lists.size(empFlow.flow.flowSections) > 0}">
+
+			<div class="card shadow mb-3">
+
+				<div class="card-header text-center">
+					<span class="h3 mb-0 text-gray-800" th:text="${empFlow.flow.name}"></span>
+				</div>
+
+				<div class="card-body">
+
+					<th:block th:each="fSec : ${empFlow.flow.flowSections}">
+
+						<div class="card mb-3" th:each="sec : ${fSec.section}">
+
+	<!--						<th:block th:unless="${empFlow.flow.name == sec.name}">-->
+
+								<!--Section-->
+								<th:block th:switch="${sec.color}">
+									<th:block th:case="'B'">
+										<div class="card-header bg-info">
+											<span class="h3 mb-0 text-white" th:text="${sec.name}"></span>
+										</div>
+									</th:block>
+									<th:block th:case="'G'">
+										<div class="card-header bg-success">
+											<span class="h3 mb-0 text-white" th:text="${sec.name}"></span>
+										</div>
+									</th:block>
+									<th:block th:case="'Y'">
+										<div class="card-header bg-warning">
+											<span class="h3 mb-0 text-white" th:text="${sec.name}"></span>
+										</div>
+									</th:block>
+
+									<th:block th:case="*">
+										<div class="card-header">
+											<span class="h3 mb-0 text-white" th:text="${sec.name}"></span>
+										</div>
+									</th:block>
+								</th:block>
+	<!--						</th:block>-->
+
+							<div class="card-body">
+								<table class="table table-bordered">
+									<colgroup>
+										<col>
+										<col>
+										<col style="width: 10%;">
+										<col style="width: 5%;">
+										<col style="width: 7%;">
+										<col style="width: 10%;">
+										<col style="width: 10%;">
+										<col style="width: 10%;">
+									</colgroup>
+									<thead class="text-center">
+										<th>Description</th>
+										<th>Details</th>
+										<th>Facilitator</th>
+										<th>Target Day</th>
+										<th>Target Sprint</th>
+										<th>Status</th>
+										<th>Start Date</th>
+										<th>Completed Date</th>
+									</thead>
+									<tbody>
+									<tr th:each="sub : ${sec.subsectionList}">
+										<td th:text="${sub.description}"></td>
+										<td th:text="${sub.details}"></td>
+										<td th:text="${sub.facilitator}"></td>
+										<td th:text="${sub.targetDay}"></td>
+										<td th:text="${sub.targetSprint}"></td>
+										<td th:class="|employee-subsection-control-status-${sub.subsectionId}|">
+											<input type="hidden" name="subsection_id" th:value="${sub.subsectionId}"/>
+											<input type="hidden" name="employee_id" th:value="${empFlow.employee.id}"/>
+
+											<!--TODO JJJ: use Status enum-->
+											<select class="form-control d-none" name="status">
+												<option value=""></option>
+												<option value="Pending">Pending</option>
+												<option value="Ongoing">Ongoing</option>
+												<option value="Done">Done</option>
+											</select>
+
+											<div class="d-flex justify-content-center cell-spinner">
+												<div class="spinner-border spinner-border-sm" role="status">
+												  <span class="sr-only">Loading...</span>
+												</div>
+											</div>
+										</td>
+										<td th:class="|employee-subsection-control-start-date-${sub.subsectionId}|">
+											<input type="hidden" name="subsection_id" th:value="${sub.subsectionId}"/>
+											<input type="hidden" name="employee_id" th:value="${empFlow.employee.id}"/>
+
+											<input type="date" name="startDate" class="form-control d-none">
+
+											<div class="d-flex justify-content-center cell-spinner">
+												<div class="spinner-border spinner-border-sm" role="status">
+												  <span class="sr-only">Loading...</span>
+												</div>
+											  </div>
+										</td>
+										<td th:class="|employee-subsection-control-completed-date-${sub.subsectionId}|">
+											<input type="hidden" name="subsection_id" th:value="${sub.subsectionId}"/>
+											<input type="hidden" name="employee_id" th:value="${empFlow.employee.id}"/>
+
+											<input type="date" name="completedDate" class="form-control d-none">
+
+											<div class="d-flex justify-content-center cell-spinner">
+												<div class="spinner-border spinner-border-sm" role="status">
+												  <span class="sr-only">Loading...</span>
+												</div>
+											  </div>
+
+										</td>
+									</tr>
+									</tbody>
+								</table>
+
+							</div>
+						</div>
+
+					</th:block>
+
+				</div>
+
+			</div>
+
+		</th:block>
+
+	</th:block>
+
+</main>
+
+
+<script>
+	const app = () =>{ 
+
+		const EMPLOYEE_ID = parseInt(document.URL.substring(document.URL.lastIndexOf('/') + 1));
+
+		let loadQuery = 
+				{"query": "{allEmployeeSubsectionStatusesById(id: "+ parseInt(EMPLOYEE_ID) +") {id,status,startDate,completedDate,subsection{subsectionId}}}"};		
+
+		const postData = async(data) => {
+			try {
+				const response = await fetch("/graphql", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(data),
+				});
+
+				const result = await response.json();
+				console.log("Success:", result);
+				return result;
+			} catch (error) {
+				console.error("Error:", error);
+			}
+		}
+
+		const loadInit = async () => {
+			let data = await postData(loadQuery);
+
+			for(let rec of data.data.allEmployeeSubsectionStatusesById){
+				if(valueEvaluator(rec.status) != null)
+					$('.employee-subsection-control-status-'+ rec.subsection.subsectionId)
+						.find('[name=status]').val(rec.status).addClass('font-weight-bold');
+
+				if(valueEvaluator(rec.startDate) != null)
+					$('.employee-subsection-control-start-date-'+ rec.subsection.subsectionId)
+						.find('[name=startDate]').val(rec.startDate).change().addClass('font-weight-bold');	
+
+				if(valueEvaluator(rec.completedDate) != null)
+					$('.employee-subsection-control-completed-date-'+ rec.subsection.subsectionId)
+						.find('[name=completedDate]').val(rec.completedDate).change().addClass('font-weight-bold');
+
+			}
+
+			$('[name="status"],[name="startDate"],[name="completedDate"]')
+				.removeClass('d-none').on('change', updateSubsection);
+			$('div.cell-spinner').each((h, i)=> $(i).removeClass('d-flex').addClass('d-none'));
+		}
+
+		const updateSubsection = async (e) => {
+			let thisControl = $(e.target);
+			let parentOfCtrl = thisControl.parent();
+			let subSectionId = parseInt(parentOfCtrl.find('[name=subsection_id]').val());
+
+			let statusCtrl = $('.employee-subsection-control-status-'+ subSectionId).find('[name=status]');
+			let startDateCtrl = $('.employee-subsection-control-start-date-'+ subSectionId).find('[name="startDate"]');
+			let completedDateCtrl = $('.employee-subsection-control-completed-date-'+ subSectionId).find('[name="completedDate"]');
+			
+			let upsertQuery = {"query": 
+				'mutation {upsertEmployeeSubsectionStatus(form:'+
+					'{id:null,employeeId:'+ EMPLOYEE_ID +',subsectionId:"'+ valueEvaluator(subSectionId) +'",status:"'+ valueEvaluator(statusCtrl.find("option:selected").val()) +
+					'",startDate:"'+ valueEvaluator(startDateCtrl.val()) +'",completedDate:"'+ valueEvaluator(completedDateCtrl.val()) +'"}){id}}'};
+
+			
+			let result = await postData(upsertQuery);
+
+			thisControl.addClass('font-weight-bold');
+		} 
+
+		const valueEvaluator = (value) => {
+			if(value == undefined || value === undefined)
+				return null;
+			else if(value == NaN || value === NaN)
+				return null;
+			else
+				return value;
+		}
+
+
+		return {
+			loadPage: loadInit
+		};
+
+	}
+
+
+	window.addEventListener('load', app().loadPage());
+</script>
+</html>
